@@ -104,9 +104,9 @@ export function CronogramaView({
         onVoltar={() => onNavigate('dashboard')}
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-7 items-start">
         {/* COLUNA ESQUERDA (5 colunas): Calendário + Configuração de Dia da Semana & Regras */}
-        <div className="xl:col-span-5 flex flex-col gap-5 xl:sticky xl:top-6">
+        <div className="xl:col-span-5 flex flex-col gap-7 xl:sticky xl:top-6">
           <Panel
             title="Calendário de Disparos"
             subtitle="Clique em um dia destacado para filtrar os envios daquela semana"
@@ -177,7 +177,7 @@ export function CronogramaView({
         </div>
 
         {/* COLUNA DIREITA (7 colunas): Timeline Semanal Detalhada */}
-        <div className="xl:col-span-7 flex flex-col gap-5">
+        <div className="xl:col-span-7 flex flex-col gap-7">
           {/* Pílulas de filtro por Trilha */}
           <Panel delay={100}>
             <div className="flex items-center justify-between flex-wrap gap-2">

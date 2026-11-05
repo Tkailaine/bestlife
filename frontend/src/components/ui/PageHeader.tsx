@@ -13,7 +13,7 @@ export interface Indicador {
 const tonsChip = {
   amarelo: 'bg-bl-yellow text-bl-ink shadow-xs',
   azul: 'bg-bl-blue text-white shadow-xs',
-  vidro: 'bg-white/80 border border-white/90 text-bl-ink shadow-2xs',
+  vidro: 'bg-white/85 border border-white text-bl-ink',
 };
 
 function IndicadorItem({ item, delay }: { item: Indicador; delay: number }) {
@@ -21,24 +21,29 @@ function IndicadorItem({ item, delay }: { item: Indicador; delay: number }) {
   const Icon = item.icon;
 
   return (
-    <div className="flex items-start gap-3.5 rise" style={{ '--d': `${delay}ms` } as CSSProperties}>
+    <div
+      className="flex items-start gap-3.5 rise"
+      style={{ '--d': `${delay}ms` } as CSSProperties}
+    >
       <div className="glass-icon w-11 h-11 cursor-default shrink-0">
         <Icon className="w-4 h-4 text-bl-ink" />
       </div>
       <div className="min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-num-black text-[21px] text-bl-ink leading-none">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <span className="font-num-black text-[22px] text-bl-ink leading-none">
             {item.formato ? item.formato(valorAnimado) : valorAnimado}
           </span>
           {item.chip && (
             <span
-              className={`text-[10px] font-bold rounded-full px-2.5 py-1 whitespace-nowrap ${tonsChip[item.chip.tom]}`}
+              className={`text-[11px] font-bold rounded-full px-2.5 py-0.5 whitespace-nowrap ${tonsChip[item.chip.tom]}`}
             >
               {item.chip.texto}
             </span>
           )}
         </div>
-        <p className="text-[11px] text-bl-muted mt-1 leading-snug max-w-[155px]">{item.legenda}</p>
+        <p className="text-xs text-bl-muted mt-1.5 leading-snug max-w-[180px]">
+          {item.legenda}
+        </p>
       </div>
     </div>
   );
@@ -52,10 +57,15 @@ interface PageHeaderProps {
   extra?: ReactNode;
 }
 
-// Cabeçalho estrutural inspirado no topo "Customer Information" da referência Salesforce
-export function PageHeader({ linha1, linha2, indicadores, onVoltar, extra }: PageHeaderProps) {
+export function PageHeader({
+  linha1,
+  linha2,
+  indicadores,
+  onVoltar,
+  extra,
+}: PageHeaderProps) {
   return (
-    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-6">
+    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-7 mb-8">
       <div className="flex items-center gap-4 shrink-0 rise">
         {onVoltar && (
           <button
@@ -68,16 +78,16 @@ export function PageHeader({ linha1, linha2, indicadores, onVoltar, extra }: Pag
             <ArrowLeft className="w-4 h-4 text-bl-ink" />
           </button>
         )}
-        <h1 className="font-display font-semibold text-[27px] md:text-[32px] leading-[1.06] tracking-tight text-bl-ink">
+        <h1 className="font-display font-bold text-[28px] md:text-[34px] leading-[1.1] tracking-tight text-bl-ink">
           {linha1}
           <br />
-          <span className="text-bl-ink">{linha2}</span>
+          <span className="text-bl-ink/85">{linha2}</span>
         </h1>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-4 xl:max-w-3xl">
+      <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-5 xl:max-w-3xl">
         {indicadores.map((item, i) => (
-          <IndicadorItem key={item.legenda} item={item} delay={70 + i * 65} />
+          <IndicadorItem key={item.legenda} item={item} delay={60 + i * 60} />
         ))}
       </div>
 

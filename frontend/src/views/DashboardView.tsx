@@ -5,18 +5,19 @@ import {
   CalendarCheck2,
   MoreHorizontal,
   ArrowUpRight,
-  Maximize2,
+  Check,
   Send,
+  Sparkles,
 } from 'lucide-react';
 import type { Cliente, CronogramaItem, HistoricoSimulacao, TabType } from '../types';
-import { ORDEM_TRILHAS, visualDaTrilha } from '../constants/trilhas';
+import { visualDaTrilha } from '../constants/trilhas';
 import { formatarMoeda } from '../utils/format';
+import { calcularInteligenciaOperacao } from '../utils/intelligence';
 import { PageHeader, type Indicador } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';
 import { IconButton } from '../components/ui/IconButton';
-import { AvatarStack } from '../components/ui/Avatar';
+import { Avatar, AvatarStack } from '../components/ui/Avatar';
 import { SendCalendar } from '../components/ui/SendCalendar';
-import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { CustomerInspectorPanel } from '../components/ui/CustomerInspectorPanel';
 
 interface DashboardViewProps {
@@ -44,12 +45,14 @@ export function DashboardView({
   onQuickSimulate,
   isSimulating,
 }: DashboardViewProps) {
-  const [modoFunil, setModoFunil] = useState<'sugeridas' | 'confirmadas'>('sugeridas');
+  const [aprovandoId, setAprovandoId] = useState<number | null>(null);
 
   const totalClientes = clientes.length;
   const confirmados = clientes.filter((c) => c.status_confirmacao);
   const pendentes = totalClientes - confirmados.length;
   const volumeTotal = clientes.reduce((acc, c) => acc + c.valor_total_carrinhos, 0);
+
+  const inteligencia = calcularInteligenciaOperacao(clientes);
 
   // Agrupa clientes por trilha sugerida
   const clientesPorTrilha: Record<string, Cliente[]> = {
@@ -68,7 +71,6 @@ export function DashboardView({
     }
   }
 
-  // Ordem visual do grid 2x3 inspirada nas 6 células de "Interaction History" da referência
   const ordemCardsGrid = [
     'Alto valor',
     'Público jovem',
@@ -83,25 +85,24 @@ export function DashboardView({
       valor: Math.round(volumeTotal),
       formato: (n) => formatarMoeda(n),
       chip: { texto: `${totalClientes} clientes`, tom: 'amarelo' },
-      legenda: 'Volume acumulado dos carrinhos DummyJSON',
+      legenda: 'Volume acumulado em carrinhos na base',
     },
     {
       icon: Users,
       valor: confirmados.length,
       formato: (n) => `+${n}`,
       chip: { texto: `${pendentes} pendentes`, tom: 'azul' },
-      legenda: 'Clientes revisados e ativos no cronograma',
+      legenda: 'Clientes aprovados pelo analista de CRM',
     },
     {
       icon: CalendarCheck2,
       valor: cronograma.length,
       formato: (n) => `+${n}`,
       chip: { texto: `${historico.length} simulados`, tom: 'vidro' },
-      legenda: 'Disparos semanais previstos na fila Setabot',
+      legenda: 'Mensagens previstas nas próximas semanas',
     },
   ];
 
-  // Navegação anterior / próximo no painel lateral direito
   const indiceAtual = clienteEmFoco
     ? clientes.findIndex((c) => c.id === clienteEmFoco.id)
     : 0;
@@ -118,66 +119,58 @@ export function DashboardView({
     onSelecionarClienteFoco(clientes[novoIndice]);
   };
 
-  // Dados para o "Stage Funnel" (Funil em degraus como na referência Salesforce)
-  const dadosFunil = ORDEM_TRILHAS.map((nome) => {
-    const lista =
-      modoFunil === 'sugeridas'
-        ? clientesPorTrilha[nome] ?? []
-        : clientes.filter((c) => c.status_confirmacao && c.trilhas_confirmadas.includes(nome));
-    const somaValor = lista.reduce((acc, c) => acc + c.valor_total_carrinhos, 0);
-    return {
-      nome,
-      quantidade: lista.length,
-      valor: somaValor,
-      primeiroCliente: lista[0] ?? null,
-    };
-  });
+  const aprovarRapido = async (c: Cliente) => {
+    setAprovandoId(c.id);
+    try {
+      const sugeridas = c.trilhas_sugeridas.map((t) => t.nome);
+      await onConfirmarTrilhas(c.id, sugeridas);
+    } finally {
+      setAprovandoId(null);
+    }
+  };
 
   return (
-    <div>
-      {/* Topo idêntico à anatomia "Customer Information" da referência */}
+    <div className="space-y-7">
+      {/* Cabeçalho amplo e arejado */}
       <PageHeader
-        linha1="Customer"
-        linha2="Information"
+        linha1="Visão Geral"
+        linha2="da Operação CRM"
         indicadores={indicadoresTopo}
         extra={
           <button
             type="button"
             onClick={onQuickSimulate}
             disabled={isSimulating || confirmados.length === 0}
-            className="px-4 py-2.5 rounded-full bg-bl-ink text-white text-xs font-semibold shadow-lg hover:bg-bl-blue transition-all flex items-center gap-2 cursor-pointer disabled:opacity-45"
+            className="px-5 py-3 rounded-full bg-bl-ink text-white text-xs font-bold shadow-lg hover:bg-bl-blue transition-all flex items-center gap-2.5 cursor-pointer disabled:opacity-45"
           >
-            <Send className="w-3.5 h-3.5 text-bl-yellow" />
+            <Send className="w-4 h-4 text-bl-yellow" />
             {isSimulating ? 'Simulando lote...' : 'Simular envios de hoje'}
           </button>
         }
       />
 
-      {/* Grade Bento Assimétrica de 12 Colunas (8 à esquerda + 4 à direita) */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
-        {/* COLUNA ESQUERDA (8 colunas): Trilhas de Comunicação + Calendário + Funil */}
-        <div className="xl:col-span-8 flex flex-col gap-5">
-          {/* BLOCO SUPERIOR: Grade 2x3 de Cards Coloridos & Translúcidos ("Interaction History") */}
+      {/* Grade Bento Espaçosa (8 colunas à esquerda + 4 à direita) */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-7 items-start">
+        {/* COLUNA ESQUERDA (8 colunas) */}
+        <div className="xl:col-span-8 flex flex-col gap-7">
+          {/* BLOCO 1: Grade 2x3 de Trilhas (Limpa, com bastante espaço interno) */}
           <Panel
-            title="Trilhas de Comunicação & Carteira"
-            subtitle="Clique em uma trilha para filtrar a carteira ou inspecionar seus clientes prioritários"
-            delay={80}
+            title="Distribuição por Trilhas de Comunicação"
+            subtitle="Clique em uma trilha para filtrar os clientes ou selecionar o perfil em destaque"
+            delay={70}
             actions={
-              <>
-                <IconButton label="Ver todos os clientes" onClick={() => onNavigate('clientes')}>
-                  <MoreHorizontal className="w-4 h-4" />
-                </IconButton>
-                <IconButton label="Abrir gestão de clientes" onClick={() => onNavigate('clientes')}>
-                  <ArrowUpRight className="w-4 h-4" />
-                </IconButton>
-              </>
+              <IconButton
+                label="Abrir carteira completa de clientes"
+                onClick={() => onNavigate('clientes')}
+              >
+                <ArrowUpRight className="w-4 h-4" />
+              </IconButton>
             }
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {ordemCardsGrid.map((nomeTrilha) => {
                 const vis = visualDaTrilha(nomeTrilha);
                 const lista = clientesPorTrilha[nomeTrilha] ?? [];
-                const somaTrilha = lista.reduce((acc, c) => acc + c.valor_total_carrinhos, 0);
                 const nomesAvatares = lista.slice(0, 4).map((c) => c.nome_completo);
 
                 return (
@@ -187,18 +180,18 @@ export function DashboardView({
                       if (lista[0]) onSelecionarClienteFoco(lista[0]);
                       onNavigate('clientes', nomeTrilha);
                     }}
-                    className={`rounded-[24px] p-4 min-h-[152px] flex flex-col justify-between lift cursor-pointer ${vis.tile} ${vis.tileText}`}
+                    className={`rounded-[26px] p-5 min-h-[158px] flex flex-col justify-between lift cursor-pointer ${vis.tile} ${vis.tileText}`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <span className={`text-[11px] font-medium ${vis.tileSubtext}`}>
-                          Prioridade 0{vis.prioridade} · {vis.regra}
+                        <span className={`text-xs font-medium ${vis.tileSubtext}`}>
+                          Prioridade 0{vis.prioridade}
                         </span>
-                        <h4 className="font-semibold text-sm mt-1 leading-snug">
+                        <h4 className="font-bold text-base mt-1 leading-snug">
                           {nomeTrilha}
                         </h4>
-                        <p className={`text-[11px] leading-tight mt-0.5 ${vis.tileSubtext}`}>
-                          {vis.subtitulo}
+                        <p className={`text-xs mt-0.5 ${vis.tileSubtext}`}>
+                          {vis.regra}
                         </p>
                       </div>
 
@@ -213,15 +206,10 @@ export function DashboardView({
                       )}
                     </div>
 
-                    <div className="flex items-end justify-between gap-2 pt-4">
-                      <div>
-                        <div className="font-num-black text-lg leading-none">
-                          {lista.length} clientes
-                        </div>
-                        <div className={`text-[10px] mt-1 ${vis.tileSubtext}`}>
-                          {formatarMoeda(somaTrilha)}
-                        </div>
-                      </div>
+                    <div className="flex items-end justify-between gap-2 pt-5">
+                      <span className="font-num-black text-xl leading-none">
+                        {lista.length}
+                      </span>
 
                       {nomesAvatares.length > 0 && (
                         <AvatarStack nomes={nomesAvatares} max={3} />
@@ -231,21 +219,21 @@ export function DashboardView({
                 );
               })}
 
-              {/* 6º Card da Grade 2x3: Lote Confirmado para Cronograma */}
+              {/* 6º Card: Lote Confirmado */}
               <div
                 onClick={() => onNavigate('cronograma')}
-                className="rounded-[24px] p-4 min-h-[152px] flex flex-col justify-between lift cursor-pointer bg-white/85 border border-white text-bl-ink shadow-[0_18px_34px_-22px_rgba(24,46,98,0.18)]"
+                className="rounded-[26px] p-5 min-h-[158px] flex flex-col justify-between lift cursor-pointer bg-white/85 border border-white text-bl-ink shadow-[0_18px_34px_-22px_rgba(24,46,98,0.16)]"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <span className="text-[11px] font-medium text-bl-muted">
-                      Lote Ativo · 3 msgs/trilha
+                    <span className="text-xs font-medium text-bl-muted">
+                      Cronograma Ativo
                     </span>
-                    <h4 className="font-semibold text-sm mt-1 leading-snug">
-                      Confirmados no Cronograma
+                    <h4 className="font-bold text-base mt-1 leading-snug">
+                      Clientes Confirmados
                     </h4>
-                    <p className="text-[11px] leading-tight mt-0.5 text-bl-muted">
-                      Revisados pelo analista de CRM
+                    <p className="text-xs mt-0.5 text-bl-muted">
+                      {cronograma.length} mensagens na fila
                     </p>
                   </div>
 
@@ -254,15 +242,10 @@ export function DashboardView({
                   </span>
                 </div>
 
-                <div className="flex items-end justify-between gap-2 pt-4">
-                  <div>
-                    <div className="font-num-black text-lg text-bl-blue leading-none">
-                      {confirmados.length} aprovados
-                    </div>
-                    <div className="text-[10px] mt-1 text-bl-muted">
-                      {cronograma.length} envios agendados
-                    </div>
-                  </div>
+                <div className="flex items-end justify-between gap-2 pt-5">
+                  <span className="font-num-black text-xl text-bl-blue leading-none">
+                    {confirmados.length}
+                  </span>
 
                   {confirmados.length > 0 && (
                     <AvatarStack
@@ -275,95 +258,101 @@ export function DashboardView({
             </div>
           </Panel>
 
-          {/* BLOCO INFERIOR DIVIDIDO: Calendário Semanal ("Tasks Schedule") + Funil em Degraus ("Stage Funnel") */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          {/* BLOCO 2: Calendário Semanal + Fila Inteligente de Maior Impacto */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-7">
             {/* Calendário de Disparos (6 colunas) */}
             <Panel
-              title="Agenda de Disparos"
-              subtitle="Dias com envios previstos para clientes confirmados"
+              title="Calendário de Disparos"
+              subtitle="Visão mensal das próximas semanas programadas"
               className="lg:col-span-6"
-              delay={160}
+              delay={140}
               actions={
-                <>
-                  <IconButton label="Opções do calendário" onClick={() => onNavigate('cronograma')}>
-                    <MoreHorizontal className="w-4 h-4" />
-                  </IconButton>
-                  <IconButton label="Abrir cronograma completo" onClick={() => onNavigate('cronograma')}>
-                    <ArrowUpRight className="w-4 h-4" />
-                  </IconButton>
-                </>
+                <IconButton
+                  label="Abrir cronograma detalhado"
+                  onClick={() => onNavigate('cronograma')}
+                >
+                  <ArrowUpRight className="w-4 h-4" />
+                </IconButton>
               }
             >
               <SendCalendar
                 itens={cronograma}
                 onSelecionarData={() => onNavigate('cronograma')}
-                onExpandir={() => onNavigate('cronograma')}
               />
             </Panel>
 
-            {/* Funil em Degraus Estilo "Stage Funnel" da Referência Salesforce (6 colunas) */}
+            {/* Fila Inteligente de Decisão (6 colunas — apoia o analista no que aprovar primeiro) */}
             <Panel
-              title="Funil por Prioridade"
-              subtitle="Volume financeiro em cada etapa de trilha"
+              title="Foco do Analista · Maior Impacto"
+              subtitle="Clientes pendentes com maior valor em compras aguardando liberação"
               className="lg:col-span-6"
-              delay={220}
+              delay={200}
               actions={
-                <>
-                  <IconButton label="Filtrar trilhas" onClick={() => onNavigate('clientes')}>
-                    <MoreHorizontal className="w-4 h-4" />
-                  </IconButton>
-                  <IconButton label="Ver clientes por trilha" onClick={() => onNavigate('clientes')}>
-                    <ArrowUpRight className="w-4 h-4" />
-                  </IconButton>
-                </>
+                <IconButton
+                  label="Ver todos os pendentes"
+                  onClick={() => onNavigate('clientes')}
+                >
+                  <ArrowUpRight className="w-4 h-4" />
+                </IconButton>
               }
             >
-              <div className="flex items-center justify-between gap-2 mb-4">
+              {/* Resumo de valor represado */}
+              <div className="flex items-center justify-between gap-3 mb-5 pb-4 border-b border-white/60">
                 <div>
-                  <div className="font-num-black text-xl text-bl-ink">
-                    {formatarMoeda(volumeTotal)}
+                  <div className="text-xs text-bl-muted">
+                    Potencial aguardando confirmação ({inteligencia.vipPendentes.length} VIPs)
                   </div>
-                  <div className="text-[11px] text-bl-muted">Total em carteira</div>
+                  <div className="font-num-black text-xl text-bl-ink mt-0.5">
+                    {formatarMoeda(inteligencia.valorRetidoPendentes)}
+                  </div>
                 </div>
-
-                <SegmentedControl<'sugeridas' | 'confirmadas'>
-                  opcoes={[
-                    { valor: 'sugeridas', rotulo: 'Sugeridas' },
-                    { valor: 'confirmadas', rotulo: 'Confirmadas' },
-                  ]}
-                  valor={modoFunil}
-                  onChange={setModoFunil}
-                />
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-bl-yellow px-3 py-1 text-xs font-bold text-bl-ink">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Priorizar hoje
+                </span>
               </div>
 
-              {/* Degraus escalonados (exatamente como o Stage Funnel da referência) */}
-              <div className="space-y-2.5">
-                {dadosFunil.slice(0, 4).map((etapa, idx) => {
-                  const recuoLeft = idx * 18;
+              {/* Lista escalonada em degraus (inspirada no Stage Funnel, mas focada em decisão) */}
+              <div className="space-y-3">
+                {inteligencia.filaMaiorImpacto.slice(0, 4).map((c, idx) => {
+                  const recuo = idx * 12;
+                  const selecionado = clienteEmFoco?.id === c.id;
                   return (
                     <div
-                      key={etapa.nome}
-                      style={{ marginLeft: `${recuoLeft}px` }}
-                      onClick={() => {
-                        if (etapa.primeiroCliente) {
-                          onSelecionarClienteFoco(etapa.primeiroCliente);
-                        }
-                        onNavigate('clientes', etapa.nome);
-                      }}
-                      className="glass-inset rounded-2xl px-4 py-3 flex items-center justify-between gap-3 lift cursor-pointer"
+                      key={c.id}
+                      style={{ marginLeft: `${recuo}px` }}
+                      onClick={() => onSelecionarClienteFoco(c)}
+                      className={`rounded-2xl px-4 py-3 flex items-center justify-between gap-3 lift cursor-pointer ${
+                        selecionado
+                          ? 'bg-white/95 ring-1 ring-bl-blue/40 shadow-md'
+                          : 'glass-inset'
+                      }`}
                     >
-                      <div className="min-w-0">
-                        <div className="text-[11px] text-bl-muted truncate">
-                          P{idx + 1} · {etapa.nome} ({etapa.quantidade} clientes)
-                        </div>
-                        <div className="font-num-black text-sm text-bl-ink mt-0.5">
-                          {formatarMoeda(etapa.valor)}
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar nome={c.nome_completo} size="md" />
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-bl-ink truncate">
+                            {c.nome_completo}
+                          </div>
+                          <div className="text-[11px] text-bl-muted truncate">
+                            {formatarMoeda(c.valor_total_carrinhos)} •{' '}
+                            {c.trilhas_sugeridas.map((t) => t.nome).join(', ')}
+                          </div>
                         </div>
                       </div>
 
-                      <span className="glass-icon w-8 h-8 shrink-0">
-                        <Maximize2 className="w-3.5 h-3.5 text-bl-muted" />
-                      </span>
+                      <button
+                        type="button"
+                        disabled={aprovandoId === c.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          aprovarRapido(c);
+                        }}
+                        title="Aprovar recomendação com 1 clique"
+                        className="glass-icon w-8 h-8 shrink-0 hover:bg-bl-blue hover:text-white"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
                     </div>
                   );
                 })}
@@ -372,7 +361,7 @@ export function DashboardView({
           </div>
         </div>
 
-        {/* COLUNA DIREITA (4 colunas): Perfil em Foco + "Detailed Information" (como Eva Robinson) */}
+        {/* COLUNA DIREITA (4 colunas): Cliente em Foco + Diagnóstico Executivo */}
         <div className="xl:col-span-4">
           <CustomerInspectorPanel
             cliente={clienteEmFoco}

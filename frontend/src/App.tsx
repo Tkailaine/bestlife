@@ -65,8 +65,17 @@ export function App() {
 
         setClienteEmFoco((atual) => {
           if (listaClientes.length === 0) return null;
-          if (!atual) return listaClientes[0];
-          return listaClientes.find((c) => c.id === atual.id) ?? listaClientes[0];
+          if (atual) {
+            return listaClientes.find((c) => c.id === atual.id) ?? listaClientes[0];
+          }
+          // Prioriza automaticamente o cliente pendente de maior valor para apoiar a decisão do analista
+          const maisRelevante = [...listaClientes].sort((a, b) => {
+            if (a.status_confirmacao !== b.status_confirmacao) {
+              return a.status_confirmacao ? 1 : -1;
+            }
+            return b.valor_total_carrinhos - a.valor_total_carrinhos;
+          })[0];
+          return maisRelevante ?? listaClientes[0];
         });
       }
     } catch {
@@ -141,7 +150,7 @@ export function App() {
       <Atmosphere />
 
       {/* Camada 1: Moldura principal de vidro fosco flutuante (recua quando modal/drawer abre) */}
-      <div className="app-shell relative z-10 max-w-[1480px] mx-auto glass-frame rounded-[34px] p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-3.5rem)] flex flex-col">
+      <div className="app-shell relative z-10 max-w-[1540px] mx-auto glass-frame rounded-[36px] p-5 sm:p-7 lg:p-10 min-h-[calc(100vh-3.5rem)] flex flex-col">
         {/* Barra superior estilo Salesforce */}
         <TopBar
           abaAtiva={abaAtiva}
