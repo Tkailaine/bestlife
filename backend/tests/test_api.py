@@ -57,10 +57,18 @@ def test_cronograma_envios():
 
 
 def test_simulacao_envio_whatsapp():
-    """Testa o disparo simulado de WhatsApp gerando histórico"""
-    response = client.post("/simulacao/disparar-hoje")
-    assert response.status_code == 200
-    dados = response.json()
-    assert dados["total_simulados"] > 0
-    assert "disparos_simulados" in dados
+    """Testa o disparo simulado de WhatsApp gerando histórico sem duplicar envios"""
+    response_1 = client.post("/simulacao/disparar-hoje")
+    assert response_1.status_code == 200
+    dados_1 = response_1.json()
+    assert dados_1["total_simulados"] > 0
+    assert "disparos_simulados" in dados_1
+
+    historico_antes = client.get("/simulacao/historico").json()
+
+    # Dispara novamente no mesmo dia e garante que não duplica registros no histórico
+    response_2 = client.post("/simulacao/disparar-hoje")
+    assert response_2.status_code == 200
+    historico_depois = client.get("/simulacao/historico").json()
+    assert len(historico_depois) == len(historico_antes)
 

@@ -195,6 +195,7 @@ def simular_envios_de_hoje(db: Session = Depends(get_db)):
     envios_do_lote = [item for item in itens_cronograma if item["data_envio"] == primeira_data]
 
     simulacoes_geradas = []
+    novos_registros = 0
 
     for item in envios_do_lote:
         # Monta a requisição oficial da Setabot
@@ -202,18 +203,33 @@ def simular_envios_de_hoje(db: Session = Depends(get_db)):
             telefone=item["telefone"],
             mensagem=item["mensagem"]
         )
+        json_requisicao = json.dumps(req_setabot, ensure_ascii=False, indent=2)
 
-        # Grava no banco de dados SQLite para auditoria
-        historico = HistoricoEnvio(
-            cliente_id=item["cliente_id"],
-            nome_cliente=item["nome_cliente"],
-            telefone=item["telefone"],
-            trilha=item["trilha"],
-            mensagem=item["mensagem"],
-            data_envio=item["data_envio"],
-            requisicao_simulada=json.dumps(req_setabot, ensure_ascii=False, indent=2)
-        )
-        db.add(historico)
+        # Verifica se já existe simulação salva para este cliente, trilha e data (evita duplicatas)
+        envio_existente = db.query(HistoricoEnvio).filter(
+            HistoricoEnvio.cliente_id == item["cliente_id"],
+            HistoricoEnvio.trilha == item["trilha"],
+            HistoricoEnvio.data_envio == item["data_envio"]
+        ).first()
+
+        if envio_existente:
+            # Atualiza o registro existente sem criar linha repetida
+            envio_existente.mensagem = item["mensagem"]
+            envio_existente.requisicao_simulada = json_requisicao
+        else:
+            # Grava no banco de dados SQLite apenas se for um envio inédito
+            historico = HistoricoEnvio(
+                cliente_id=item["cliente_id"],
+                nome_cliente=item["nome_cliente"],
+                telefone=item["telefone"],
+                trilha=item["trilha"],
+                mensagem=item["mensagem"],
+                data_envio=item["data_envio"],
+                requisicao_simulada=json_requisicao
+            )
+            db.add(historico)
+            novos_registros += 1
+
         simulacoes_geradas.append({
             "cliente": item["nome_cliente"],
             "telefone": item["telefone"],
@@ -226,6 +242,7 @@ def simular_envios_de_hoje(db: Session = Depends(get_db)):
     return {
         "mensagem": f"Simulação de envios concluída com sucesso para a data {primeira_data}!",
         "total_simulados": len(simulacoes_geradas),
+        "novos_registrados": novos_registros,
         "data_lote": primeira_data,
         "disparos_simulados": simulacoes_geradas
     }
