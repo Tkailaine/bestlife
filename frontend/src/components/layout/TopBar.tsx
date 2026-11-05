@@ -21,14 +21,14 @@ const ABAS: Array<{ id: TabType; rotulo: string }> = [
 export function TopBar({ abaAtiva, onSelecionarAba, apiOnline, pendentes, onRecarregar, carregando }: TopBarProps) {
   return (
     <header className="flex items-center gap-3 md:gap-4 rise relative z-30">
-      {/* Marca: o logo é branco, então fica sobre um bloco no azul institucional */}
-      <div className="flex items-center gap-3 shrink-0">
-        <div className="h-11 px-3.5 rounded-2xl bg-bl-blue flex items-center shadow-[0_12px_24px_-12px_rgb(38_77_164_/_0.9)]">
-          <img src={logoBestLife} alt="BestLife" className="h-7 w-auto" />
+      {/* Marca: logo BestLife maior e em destaque sobre o bloco azul institucional */}
+      <div className="flex items-center gap-3.5 shrink-0">
+        <div className="h-14 px-5 rounded-2xl bg-bl-blue flex items-center shadow-[0_14px_28px_-12px_rgb(38_77_164_/_0.9)]">
+          <img src={logoBestLife} alt="BestLife" className="h-10 sm:h-11 w-auto object-contain" />
         </div>
         <div className="hidden sm:block leading-tight">
-          <div className="font-display text-[13px] font-semibold tracking-tight text-bl-ink">CRM</div>
-          <div className="text-[11px] text-bl-muted">Relacionamento</div>
+          <div className="font-display text-sm font-bold tracking-tight text-bl-ink">CRM</div>
+          <div className="text-xs text-bl-muted">Relacionamento</div>
         </div>
       </div>
 

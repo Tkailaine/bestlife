@@ -45,14 +45,14 @@ export function CronogramaView({
   const [dataSelecionada, setDataSelecionada] = useState<string | null>(null);
   const [salvandoDia, setSalvandoDia] = useState(false);
 
-  const clientesUnicos = new Set(cronograma.map((i) => i.cliente_id)).size;
-  const semanasUnicas = new Set(cronograma.map((i) => i.data_envio)).size;
-
   const itensFiltrados = cronograma.filter((item) => {
     const okTrilha = filtroTrilha === 'Todas' || item.trilha === filtroTrilha;
     const okData = !dataSelecionada || item.data_envio === dataSelecionada;
     return okTrilha && okData;
   });
+
+  const clientesUnicos = new Set(itensFiltrados.map((i) => i.cliente_id)).size;
+  const semanasUnicas = new Set(itensFiltrados.map((i) => i.data_envio)).size;
 
   // Agrupa por data prevista
   const gruposPorData: Record<string, CronogramaItem[]> = {};
@@ -75,7 +75,7 @@ export function CronogramaView({
   const indicadores: Indicador[] = [
     {
       icon: CalendarDays,
-      valor: cronograma.length,
+      valor: itensFiltrados.length,
       chip: { texto: `${semanasUnicas} datas`, tom: 'amarelo' },
       legenda: 'Total de disparos semanais programados',
     },

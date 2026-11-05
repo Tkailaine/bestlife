@@ -63,29 +63,35 @@ export function ClientesView({
     setFiltroTrilha(filtroTrilhaInicial);
   }, [filtroTrilhaInicial]);
 
-  const total = clientes.length;
-  const confirmados = clientes.filter((c) => c.status_confirmacao).length;
+  // 1º Passo: Filtra pela busca (nome, estado, telefone) e pela trilha selecionada
+  const clientesPorBuscaETrilha = clientes.filter((c) => {
+    const termo = busca.trim().toLowerCase();
+    const atendeBusca =
+      !termo ||
+      c.nome_completo.toLowerCase().includes(termo) ||
+      (c.estado && c.estado.toLowerCase().includes(termo)) ||
+      c.telefone.includes(termo);
+
+    const trilhasCliente = c.trilhas_sugeridas.map((t) => t.nome);
+    const atendeTrilha =
+      filtroTrilha === 'Todas' || trilhasCliente.includes(filtroTrilha);
+
+    return atendeBusca && atendeTrilha;
+  });
+
+  // Contagens dinâmicas que atualizam automaticamente ao pesquisar (ex: "Montana") ou trocar de trilha
+  const total = clientesPorBuscaETrilha.length;
+  const confirmados = clientesPorBuscaETrilha.filter((c) => c.status_confirmacao).length;
   const pendentes = total - confirmados;
 
-  const clientesFiltrados = clientes
+  // 2º Passo: Aplica o filtro de Status (Todos / Pendentes / Confirmados) e a ordenação
+  const clientesFiltrados = clientesPorBuscaETrilha
     .filter((c) => {
-      const termo = busca.trim().toLowerCase();
-      const atendeBusca =
-        !termo ||
-        c.nome_completo.toLowerCase().includes(termo) ||
-        (c.estado && c.estado.toLowerCase().includes(termo)) ||
-        c.telefone.includes(termo);
-
-      const trilhasCliente = c.trilhas_sugeridas.map((t) => t.nome);
-      const atendeTrilha =
-        filtroTrilha === 'Todas' || trilhasCliente.includes(filtroTrilha);
-
-      const atendeStatus =
+      return (
         filtroStatus === 'todos' ||
         (filtroStatus === 'confirmados' && c.status_confirmacao) ||
-        (filtroStatus === 'pendentes' && !c.status_confirmacao);
-
-      return atendeBusca && atendeTrilha && atendeStatus;
+        (filtroStatus === 'pendentes' && !c.status_confirmacao)
+      );
     })
     .sort((a, b) => {
       if (ordenacao === 'impacto') {
@@ -106,7 +112,8 @@ export function ClientesView({
     try {
       await onConfirmarTrilhas(
         c.id,
-        c.trilhas_sugeridas.map((t) => t.nome)
+        c.trilhas_sugeridas.map((t) => t.nome),
+        c.dia_semana_envio ?? null
       );
     } finally {
       setAprovandoId(null);
@@ -117,29 +124,38 @@ export function ClientesView({
     {
       icon: Users,
       valor: total,
-      chip: { texto: `${clientesFiltrados.length} visíveis`, tom: 'vidro' },
-      legenda: 'Clientes consolidados na base',
+      chip: { texto: `${clientesFiltrados.length} na lista`, tom: 'vidro' },
+      legenda:
+        busca || filtroTrilha !== 'Todas'
+          ? `Encontrados de ${clientes.length} clientes na base`
+          : 'Clientes consolidados na base',
     },
     {
       icon: Clock,
       valor: pendentes,
       chip: { texto: 'Requer revisão', tom: 'amarelo' },
-      legenda: 'Aguardando aprovação do analista',
+      legenda: 'Aguardando aprovação neste filtro',
     },
     {
       icon: CheckCircle2,
       valor: confirmados,
       formato: (n) => `${n}`,
       chip: {
-        texto: `${total > 0 ? Math.round((confirmados / total) * 100) : 0}% da carteira`,
+        texto: `${total > 0 ? Math.round((confirmados / total) * 100) : 0}% do filtro`,
         tom: 'azul',
       },
       legenda: 'Já inseridos no cronograma semanal',
     },
   ];
 
-  const indiceFoco = clienteEmFoco
-    ? clientesFiltrados.findIndex((c) => c.id === clienteEmFoco.id)
+  // Se o cliente em foco não estiver no resultado atual da busca, exibe o primeiro do filtro
+  const clienteExibidoPainel =
+    clienteEmFoco && clientesFiltrados.some((c) => c.id === clienteEmFoco.id)
+      ? clienteEmFoco
+      : clientesFiltrados[0] ?? clienteEmFoco;
+
+  const indiceFoco = clienteExibidoPainel
+    ? clientesFiltrados.findIndex((c) => c.id === clienteExibidoPainel.id)
     : 0;
 
   return (
@@ -180,7 +196,7 @@ export function ClientesView({
                 )}
               </div>
 
-              {/* Filtro segmentado por Status */}
+              {/* Filtro segmentado por Status (atualiza dinamicamente com a busca e a trilha) */}
               <SegmentedControl<'todos' | 'pendentes' | 'confirmados'>
                 opcoes={[
                   { valor: 'todos', rotulo: 'Todos', contagem: total },
@@ -285,7 +301,7 @@ export function ClientesView({
                   </thead>
                   <tbody>
                     {clientesFiltrados.map((c) => {
-                      const selecionado = clienteEmFoco?.id === c.id;
+                      const selecionado = clienteExibidoPainel?.id === c.id;
                       const status = statusDoCliente(c);
                       const diag = diagnosticarCliente(c);
 
@@ -391,10 +407,10 @@ export function ClientesView({
           </Panel>
         </div>
 
-        {/* COLUNA DIREITA (4 colunas): Painel Lateral de Inspeção & Diagnóstico */}
+        {/* COLUNA DIREITA (4 colunas): Painel Lateral de Inspeção & Diagnóstico com rolagem completa */}
         <div className="xl:col-span-4 xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto xl:pr-1 pb-4">
           <CustomerInspectorPanel
-            cliente={clienteEmFoco}
+            cliente={clienteExibidoPainel}
             onExpandirDetalhes={onExpandirCliente}
             onConfirmarTrilhas={onConfirmarTrilhas}
             onAnterior={() => {
