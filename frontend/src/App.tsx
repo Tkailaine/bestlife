@@ -107,7 +107,7 @@ export function App() {
     try {
       await confirmarTrilhasCliente(clienteId, trilhas);
       await carregarDados();
-      notificar('sucesso', `Trilhas do cliente #${clienteId} confirmadas e salvas no SQLite.`);
+      notificar('sucesso', 'Trilhas confirmadas com sucesso e incluídas no cronograma semanal.');
     } catch (err: any) {
       notificar('erro', err?.message || 'Não foi possível salvar a confirmação.');
       throw err;
@@ -122,13 +122,13 @@ export function App() {
       setHistorico(dadosHistorico);
       notificar(
         'sucesso',
-        `${res.total_simulados} envio(s) simulado(s) para o lote ${res.data_lote} e gravados no histórico.`
+        `${res.total_simulados} envio(s) processado(s) para o lote de ${res.data_lote} e registrados no histórico.`
       );
       setAbaAtiva('historico');
     } catch (err: any) {
       notificar(
         'erro',
-        err?.message || 'Confirme ao menos um cliente antes de simular envios.'
+        err?.message || 'Confirme ao menos um cliente antes de simular os envios da semana.'
       );
     } finally {
       setIsSimulating(false);
@@ -151,7 +151,7 @@ export function App() {
 
       {/* Camada 1: Moldura principal de vidro fosco flutuante (recua quando modal/drawer abre) */}
       <div className="app-shell relative z-10 max-w-[1540px] mx-auto glass-frame rounded-[36px] p-5 sm:p-7 lg:p-10 min-h-[calc(100vh-3.5rem)] flex flex-col">
-        {/* Barra superior estilo Salesforce */}
+        {/* Barra superior */}
         <TopBar
           abaAtiva={abaAtiva}
           onSelecionarAba={(aba) => navegarPara(aba)}
@@ -161,32 +161,29 @@ export function App() {
           carregando={isLoading}
         />
 
-        {/* Aviso elegante caso a API FastAPI não esteja rodando */}
+        {/* Aviso amigável caso o sistema esteja sem conexão */}
         {!apiOnline && !isLoading && (
-          <div className="mt-5 glass-inset rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs border border-bl-yellow">
-            <div className="flex items-center gap-2.5 text-bl-ink">
+          <div className="mt-5 glass-inset rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 text-xs border border-bl-yellow">
+            <div className="flex items-center gap-3 text-bl-ink">
               <span className="w-8 h-8 rounded-full bg-bl-yellow flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-4 h-4 text-bl-ink" />
               </span>
               <span>
-                <strong>Backend FastAPI desconectado.</strong> Inicie o servidor na raiz do projeto com{' '}
-                <code className="px-2 py-0.5 rounded-md bg-white/80 font-mono text-[11px]">
-                  .\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --reload
-                </code>
+                <strong>Conexão temporariamente indisponível.</strong> Não foi possível carregar a carteira de clientes neste momento.
               </span>
             </div>
             <button
               type="button"
               onClick={carregarDados}
-              className="px-3.5 py-1.5 rounded-full bg-bl-ink text-white text-[11px] font-bold cursor-pointer"
+              className="px-4 py-2 rounded-full bg-bl-ink text-white text-xs font-bold cursor-pointer"
             >
-              Reconectar agora
+              Tentar novamente
             </button>
           </div>
         )}
 
-        {/* Corpo com o Trilho Escuro Flutuante à esquerda + Área Principal */}
-        <div className="flex-1 flex gap-5 lg:gap-7 mt-6 items-start">
+        {/* Corpo com o Trilho Escuro Flutuante à esquerda (z-40) + Área Principal (z-10) */}
+        <div className="flex-1 flex gap-5 lg:gap-7 mt-6 items-start relative">
           <ActionRail
             abaAtiva={abaAtiva}
             onSelecionarAba={(aba) => navegarPara(aba)}
@@ -195,7 +192,7 @@ export function App() {
             simulando={isSimulating}
           />
 
-          <main className="flex-1 min-w-0">
+          <main className="flex-1 min-w-0 relative z-10">
             {abaAtiva === 'dashboard' && (
               <DashboardView
                 clientes={clientes}

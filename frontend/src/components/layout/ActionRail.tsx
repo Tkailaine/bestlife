@@ -18,18 +18,18 @@ interface ItemRail {
   destaque?: boolean;
 }
 
-// Trilho escuro flutuante à esquerda (equivalente à barra de ícones da referência)
+// Trilho escuro flutuante à esquerda com z-index elevado para sobrepor os demais elementos
 export function ActionRail({ abaAtiva, onSelecionarAba, onBuscarCliente, onSimular, simulando }: ActionRailProps) {
   const navegacao: ItemRail[] = [
-    { rotulo: 'Dashboard', icon: LayoutDashboard, onClick: () => onSelecionarAba('dashboard'), ativo: abaAtiva === 'dashboard' },
-    { rotulo: 'Clientes', icon: Users, onClick: () => onSelecionarAba('clientes'), ativo: abaAtiva === 'clientes' },
-    { rotulo: 'Cronograma', icon: CalendarDays, onClick: () => onSelecionarAba('cronograma'), ativo: abaAtiva === 'cronograma' },
-    { rotulo: 'Histórico de envios', icon: History, onClick: () => onSelecionarAba('historico'), ativo: abaAtiva === 'historico' },
+    { rotulo: 'Visão Geral', icon: LayoutDashboard, onClick: () => onSelecionarAba('dashboard'), ativo: abaAtiva === 'dashboard' },
+    { rotulo: 'Carteira de Clientes', icon: Users, onClick: () => onSelecionarAba('clientes'), ativo: abaAtiva === 'clientes' },
+    { rotulo: 'Cronograma Semanal', icon: CalendarDays, onClick: () => onSelecionarAba('cronograma'), ativo: abaAtiva === 'cronograma' },
+    { rotulo: 'Histórico de Envios', icon: History, onClick: () => onSelecionarAba('historico'), ativo: abaAtiva === 'historico' },
   ];
 
   const acoes: ItemRail[] = [
     { rotulo: 'Buscar cliente', icon: Search, onClick: onBuscarCliente },
-    { rotulo: simulando ? 'Simulando…' : 'Simular envios de hoje', icon: Send, onClick: onSimular, destaque: true },
+    { rotulo: simulando ? 'Disparando…' : 'Simular envios de hoje', icon: Send, onClick: onSimular, destaque: true },
   ];
 
   const renderItem = (item: ItemRail) => {
@@ -52,8 +52,8 @@ export function ActionRail({ abaAtiva, onSelecionarAba, onBuscarCliente, onSimul
           {item.ativo && <span className="absolute -right-0.5 top-1.5 w-1.5 h-1.5 rounded-full bg-bl-yellow" />}
         </button>
 
-        {/* Tooltip flutuante em vidro */}
-        <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 whitespace-nowrap glass-strong rounded-xl px-3 py-1.5 text-[11px] font-medium text-bl-ink opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 z-20">
+        {/* Tooltip flutuante em vidro com z-50 para sempre sobrepor cabeçalhos e cards */}
+        <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3.5 whitespace-nowrap glass-strong rounded-xl px-3.5 py-2 text-xs font-semibold text-bl-ink shadow-xl opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 z-50">
           {item.rotulo}
         </span>
       </div>
@@ -61,7 +61,7 @@ export function ActionRail({ abaAtiva, onSelecionarAba, onBuscarCliente, onSimul
   };
 
   return (
-    <aside className="hidden md:block shrink-0">
+    <aside className="hidden md:block shrink-0 relative z-40">
       <div className="sticky top-6 rise" style={{ animationDelay: '120ms' }}>
         <div className="flex flex-col items-center gap-1.5 p-1.5 rounded-full bg-bl-ink/90 backdrop-blur-xl shadow-[0_24px_40px_-20px_rgb(15_30_70_/_0.6)] ring-1 ring-white/10">
           {navegacao.map(renderItem)}
@@ -72,4 +72,3 @@ export function ActionRail({ abaAtiva, onSelecionarAba, onBuscarCliente, onSimul
     </aside>
   );
 }
-

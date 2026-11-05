@@ -60,7 +60,6 @@ export function CustomerDetailDrawer({
     }
   };
 
-  // Ordena as trilhas selecionadas na ordem oficial de prioridade para mostrar a sequência de semanas
   const trilhasEmOrdem = ORDEM_TRILHAS.filter((t) => selecionadas.includes(t));
 
   return (
@@ -99,7 +98,7 @@ export function CustomerDetailDrawer({
           <div className="glass-inset rounded-2xl p-3.5">
             <div className="text-[10px] text-bl-muted flex items-center gap-1">
               <ShoppingBag className="w-3.5 h-3.5 text-bl-blue" />
-              Valor Total
+              Total em Compras
             </div>
             <div className="font-num-black text-base text-bl-ink mt-1">
               {formatarMoeda(cliente.valor_total_carrinhos)}
@@ -109,7 +108,7 @@ export function CustomerDetailDrawer({
           <div className="glass-inset rounded-2xl p-3.5">
             <div className="text-[10px] text-bl-muted flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5 text-bl-blue" />
-              Total de Itens
+              Volume de Itens
             </div>
             <div className="font-num-black text-base text-bl-ink mt-1">
               {cliente.quantidade_total_itens} un.
@@ -119,22 +118,22 @@ export function CustomerDetailDrawer({
           <div className="glass-inset rounded-2xl p-3.5">
             <div className="text-[10px] text-bl-muted flex items-center gap-1">
               <Phone className="w-3.5 h-3.5 text-bl-blue" />
-              Contato
+              WhatsApp
             </div>
-            <div className="font-semibold text-xs text-bl-ink mt-1.5 truncate font-mono">
+            <div className="font-semibold text-xs text-bl-ink mt-1.5 truncate">
               {cliente.telefone}
             </div>
           </div>
         </div>
 
-        {/* Trilhas recomendadas pelo motor de regras */}
-        <div className="glass-inset rounded-3xl p-4 space-y-3">
+        {/* Trilhas recomendadas explicadas em linguagem de negócio */}
+        <div className="glass-inset rounded-3xl p-5 space-y-3.5">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-bl-ink flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-bl-blue" />
-              Diagnóstico de Classificação Automática
+              Por que estas trilhas foram recomendadas
             </h3>
-            <span className="text-[11px] text-bl-muted">Prioridade 1 → 5</span>
+            <span className="text-[11px] text-bl-muted">Ordem de prioridade</span>
           </div>
 
           <div className="space-y-2.5">
@@ -143,7 +142,7 @@ export function CustomerDetailDrawer({
               return (
                 <div
                   key={t.nome}
-                  className="bg-white/75 border border-white rounded-2xl p-3.5 space-y-1.5"
+                  className="bg-white/80 border border-white rounded-2xl p-4 space-y-1.5"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -155,18 +154,14 @@ export function CustomerDetailDrawer({
                       </span>
                       <span className="font-bold text-xs text-bl-ink">{t.nome}</span>
                     </div>
-                    <span className="text-[10px] font-semibold text-bl-muted">
-                      Regra: {vis.regra}
+                    <span className="text-[11px] font-semibold text-bl-muted">
+                      Critério: {vis.regra}
                     </span>
                   </div>
 
-                  <p className="text-xs text-bl-ink leading-relaxed">
+                  <p className="text-xs text-bl-ink/90 leading-relaxed">
                     {motivoLegivel(t.nome, cliente)}
                   </p>
-
-                  <div className="text-[11px] font-mono text-bl-blue bg-bl-blue/8 px-2.5 py-1 rounded-xl inline-block">
-                    Cálculo: {t.motivo}
-                  </div>
                 </div>
               );
             })}
@@ -174,13 +169,13 @@ export function CustomerDetailDrawer({
         </div>
 
         {/* Ajuste manual e confirmação do Analista */}
-        <div className="glass-inset rounded-3xl p-4 space-y-3">
+        <div className="glass-inset rounded-3xl p-5 space-y-3.5">
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-bl-ink">
-              Confirmação ou Ajuste do Analista
+              Decisão do Analista
             </h3>
-            <p className="text-[11px] text-bl-muted mt-0.5">
-              Marque as trilhas que devem compor o cronograma deste cliente. Ele percorrerá uma trilha por vez (3 semanas cada), na ordem de prioridade.
+            <p className="text-xs text-bl-muted mt-0.5 leading-relaxed">
+              Confirme as trilhas sugeridas ou ajuste conforme necessário. O cliente receberá uma trilha por vez (3 semanas cada), seguindo a prioridade.
             </p>
           </div>
 
@@ -193,10 +188,10 @@ export function CustomerDetailDrawer({
               return (
                 <label
                   key={nome}
-                  className={`flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer ${
+                  className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all cursor-pointer ${
                     marcado
                       ? 'bg-bl-ink text-white border-bl-ink shadow-sm'
-                      : 'bg-white/55 border-white/80 text-bl-ink hover:bg-white/80'
+                      : 'bg-white/60 border-white/80 text-bl-ink hover:bg-white/85'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -215,7 +210,7 @@ export function CustomerDetailDrawer({
                     </span>
                     <div>
                       <div className="text-xs font-bold flex items-center gap-2">
-                        <span>P{vis.prioridade} · {nome}</span>
+                        <span>Prioridade {vis.prioridade} · {nome}</span>
                         {sugerida && (
                           <span
                             className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
@@ -229,8 +224,8 @@ export function CustomerDetailDrawer({
                         )}
                       </div>
                       <div
-                        className={`text-[10px] ${
-                          marcado ? 'text-white/70' : 'text-bl-muted'
+                        className={`text-[11px] mt-0.5 ${
+                          marcado ? 'text-white/75' : 'text-bl-muted'
                         }`}
                       >
                         {vis.regra}
@@ -238,7 +233,7 @@ export function CustomerDetailDrawer({
                     </div>
                   </div>
 
-                  <span className="text-[10px] font-semibold opacity-75">3 semanas</span>
+                  <span className="text-[11px] font-semibold opacity-75">3 semanas</span>
                 </label>
               );
             })}
@@ -246,16 +241,16 @@ export function CustomerDetailDrawer({
 
           {/* Prévia da jornada em semanas */}
           {trilhasEmOrdem.length > 0 && (
-            <div className="glass-well rounded-2xl p-3 text-xs space-y-1.5">
+            <div className="glass-well rounded-2xl p-3.5 text-xs space-y-2">
               <div className="text-[10px] font-bold uppercase tracking-wider text-bl-muted flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-bl-blue" />
-                Jornada resultante ({trilhasEmOrdem.length * 3} semanas no total)
+                Jornada programada ({trilhasEmOrdem.length * 3} semanas no total)
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {trilhasEmOrdem.map((nome, idx) => (
                   <span
                     key={nome}
-                    className="bg-white/80 border border-white rounded-xl px-2.5 py-1 text-[11px] font-semibold text-bl-ink"
+                    className="bg-white/85 border border-white rounded-xl px-3 py-1 text-[11px] font-semibold text-bl-ink"
                   >
                     Semanas {idx * 3 + 1}–{idx * 3 + 3}: <strong>{nome}</strong>
                   </span>
@@ -264,10 +259,10 @@ export function CustomerDetailDrawer({
             </div>
           )}
 
-          <div className="flex items-center gap-2 text-[11px] text-bl-muted pt-1">
+          <div className="flex items-center gap-2 text-xs text-bl-muted pt-1">
             <ShieldAlert className="w-4 h-4 text-bl-blue shrink-0" />
             <span>
-              Somente clientes confirmados entram no cronograma de envios e na simulação Setabot.
+              Somente clientes confirmados entram no cronograma semanal de WhatsApp.
             </span>
           </div>
         </div>
@@ -277,7 +272,7 @@ export function CustomerDetailDrawer({
       <div className="p-5 border-t border-white/70 bg-white/50 flex items-center justify-between gap-3">
         <div className="flex items-center gap-1.5 text-xs text-bl-muted">
           <MapPin className="w-3.5 h-3.5 text-bl-blue" />
-          <span>{cliente.estado || 'UF não informada'}</span>
+          <span>{cliente.estado || 'Estado não informado'}</span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -295,11 +290,10 @@ export function CustomerDetailDrawer({
             className="px-5 py-2.5 rounded-2xl bg-bl-blue hover:bg-bl-blue-deep text-white text-xs font-bold shadow-[0_14px_28px_-12px_rgba(38,77,164,0.85)] flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <CheckCircle2 className="w-4 h-4 text-bl-yellow" />
-            {salvando ? 'Salvando no SQLite...' : 'Confirmar & Gravar Decisão'}
+            {salvando ? 'Salvando confirmação...' : 'Confirmar Trilhas'}
           </button>
         </div>
       </div>
     </Overlay>
   );
 }
-

@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import {
   Send,
   History,
-  Terminal,
   ShieldCheck,
   ArrowUpRight,
   Phone,
   Calendar,
   X,
-  Code2,
+  MessageCircle,
+  CheckCircle2,
+  ChevronDown,
 } from 'lucide-react';
 import type { HistoricoSimulacao, TabType } from '../types';
 import { PageHeader, type Indicador } from '../components/ui/PageHeader';
@@ -52,22 +53,22 @@ export function SimulacaoView({
     {
       icon: History,
       valor: historico.length,
-      chip: { texto: 'Gravados no SQLite', tom: 'amarelo' },
-      legenda: 'Total de requisições simuladas na auditoria',
+      chip: { texto: 'Registrados', tom: 'amarelo' },
+      legenda: 'Total de mensagens enviadas na simulação',
     },
     {
       icon: Send,
       valor: clientesUnicos,
       formato: (n) => `+${n}`,
-      chip: { texto: 'Setabot API', tom: 'azul' },
-      legenda: 'Clientes impactados nos lotes simulados',
+      chip: { texto: 'WhatsApp', tom: 'azul' },
+      legenda: 'Clientes atendidos nos lotes disparados',
     },
     {
       icon: ShieldCheck,
       valor: 100,
       formato: (n) => `${n}%`,
-      chip: { texto: 'Sem disparo real', tom: 'vidro' },
-      legenda: 'Token seguro lido de variável de ambiente',
+      chip: { texto: 'Modo seguro', tom: 'vidro' },
+      legenda: 'Validação segura sem disparo real ao cliente',
     },
   ];
 
@@ -75,7 +76,7 @@ export function SimulacaoView({
     <div>
       <PageHeader
         linha1="Histórico &"
-        linha2="Simulação WhatsApp"
+        linha2="Envios de WhatsApp"
         indicadores={indicadores}
         onVoltar={() => onNavigate('dashboard')}
         extra={
@@ -86,7 +87,7 @@ export function SimulacaoView({
             className="px-5 py-3 rounded-full bg-bl-blue hover:bg-bl-blue-deep text-white text-xs font-bold shadow-[0_18px_34px_-14px_rgba(38,77,164,0.85)] transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <Send className="w-4 h-4 text-bl-yellow" />
-            {isSimulating ? 'Simulando lote...' : 'Simular envios de hoje'}
+            {isSimulating ? 'Processando lote...' : 'Simular envios de hoje'}
           </button>
         }
       />
@@ -95,12 +96,12 @@ export function SimulacaoView({
         {/* COLUNA ESQUERDA (7 colunas): Lista de Envios Simulados */}
         <div className="xl:col-span-7">
           <Panel
-            title="Registro de Envios Simulados"
-            subtitle="Clique em um registro para inspecionar a requisição HTTP montada para a Setabot"
+            title="Mensagens Processadas"
+            subtitle="Clique em qualquer envio para conferir a mensagem personalizada e os dados do destinatário"
             delay={70}
           >
             {isLoading ? (
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} className="h-16 skeleton" />
                 ))}
@@ -108,8 +109,8 @@ export function SimulacaoView({
             ) : historico.length === 0 ? (
               <EmptyState
                 icon={Send}
-                titulo="Nenhuma simulação executada ainda"
-                texto="Clique no botão 'Simular envios de hoje' no topo da página para montar e gravar as requisições HTTP da primeira semana."
+                titulo="Nenhum envio registrado ainda"
+                texto="Clique no botão 'Simular envios de hoje' no topo da página para processar o lote da primeira semana."
                 acao={
                   <button
                     type="button"
@@ -122,7 +123,7 @@ export function SimulacaoView({
                 }
               />
             ) : (
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {historico.map((item) => {
                   const ativo = selecionado?.id === item.id;
                   return (
@@ -131,19 +132,19 @@ export function SimulacaoView({
                       onClick={() => setSelecionado(item)}
                       className={`rounded-2xl p-4 transition-all cursor-pointer ${
                         ativo
-                          ? 'bg-white/90 shadow-md ring-1 ring-bl-blue/45'
-                          : 'glass-inset hover:bg-white/75'
+                          ? 'bg-white/95 shadow-md ring-1 ring-bl-blue/45'
+                          : 'glass-inset hover:bg-white/80'
                       }`}
                     >
-                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-2.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                        <div className="flex items-center gap-3">
                           <Avatar nome={item.nome_cliente} size="md" />
                           <div>
-                            <div className="font-bold text-xs text-bl-ink">
+                            <div className="font-bold text-sm text-bl-ink">
                               {item.nome_cliente}
                             </div>
-                            <div className="text-[10px] text-bl-muted font-mono">
-                              {item.telefone} • Previsto: {item.data_envio}
+                            <div className="text-[11px] text-bl-muted mt-0.5">
+                              {item.telefone} • Data do lote: {item.data_envio}
                             </div>
                           </div>
                         </div>
@@ -151,10 +152,10 @@ export function SimulacaoView({
                         <div className="flex items-center gap-2">
                           <TrilhaBadge nome={item.trilha} confirmada />
                           <span className="rounded-full bg-bl-blue text-white px-2.5 py-0.5 text-[10px] font-bold">
-                            Simulado
+                            Registrado
                           </span>
                           <IconButton
-                            label="Expandir JSON em modal"
+                            label="Ver comprovante completo"
                             onClick={() => setModalAberto(item)}
                           >
                             <ArrowUpRight className="w-3.5 h-3.5" />
@@ -162,7 +163,7 @@ export function SimulacaoView({
                         </div>
                       </div>
 
-                      <p className="text-xs text-bl-ink/85 line-clamp-2 pl-11">
+                      <p className="text-xs text-bl-ink/85 line-clamp-2 pl-12 leading-relaxed">
                         “{item.mensagem}”
                       </p>
                     </div>
@@ -173,16 +174,16 @@ export function SimulacaoView({
           </Panel>
         </div>
 
-        {/* COLUNA DIREITA (5 colunas): Inspecionador da Requisição HTTP Setabot */}
+        {/* COLUNA DIREITA (5 colunas): Prévia Amigável do Envio WhatsApp */}
         <div className="xl:col-span-5 xl:sticky xl:top-6">
           <Panel
-            title="Inspeção da Requisição Setabot"
-            subtitle="Endpoint, método, cabeçalhos e corpo gravados no histórico"
+            title="Detalhes do Envio WhatsApp"
+            subtitle="Conferência da mensagem personalizada e do destinatário"
             delay={140}
             actions={
               selecionado ? (
                 <IconButton
-                  label="Abrir em tela cheia"
+                  label="Expandir comprovante"
                   onClick={() => setModalAberto(selecionado)}
                 >
                   <ArrowUpRight className="w-4 h-4" />
@@ -192,78 +193,98 @@ export function SimulacaoView({
           >
             {!selecionado ? (
               <EmptyState
-                icon={Terminal}
+                icon={MessageCircle}
                 titulo="Selecione um envio ao lado"
-                texto="O payload HTTP formatado para a plataforma Setabot aparecerá aqui."
+                texto="Os detalhes da mensagem personalizada de WhatsApp aparecerão aqui."
               />
             ) : (
-              <div className="space-y-3.5">
-                <div className="grid grid-cols-2 gap-2.5 text-xs">
-                  <div className="glass-inset rounded-2xl p-3">
-                    <div className="text-[10px] text-bl-muted flex items-center gap-1">
-                      <Phone className="w-3.5 h-3.5 text-bl-blue" />
-                      Telefone Convertido
+              <div className="space-y-4">
+                {/* Destinatário e Status */}
+                <div className="glass-inset rounded-2xl p-4 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar nome={selecionado.nome_cliente} size="md" />
+                    <div>
+                      <div className="font-bold text-sm text-bl-ink">
+                        {selecionado.nome_cliente}
+                      </div>
+                      <div className="text-xs text-bl-muted">
+                        Trilha: <strong className="text-bl-ink">{selecionado.trilha}</strong>
+                      </div>
                     </div>
-                    <div className="font-mono font-bold text-bl-ink mt-1">
+                  </div>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-800 px-3 py-1 text-[11px] font-bold">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Pronto p/ envio
+                  </span>
+                </div>
+
+                {/* Telefone e Data */}
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="glass-inset rounded-2xl p-3.5">
+                    <div className="text-[11px] text-bl-muted flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-bl-blue" />
+                      WhatsApp Destino
+                    </div>
+                    <div className="font-bold text-sm text-bl-ink mt-1">
                       {selecionado.telefone}
                     </div>
                   </div>
 
-                  <div className="glass-inset rounded-2xl p-3">
-                    <div className="text-[10px] text-bl-muted flex items-center gap-1">
+                  <div className="glass-inset rounded-2xl p-3.5">
+                    <div className="text-[11px] text-bl-muted flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5 text-bl-blue" />
-                      Data Prevista
+                      Data Programada
                     </div>
-                    <div className="font-bold text-bl-ink mt-1">
+                    <div className="font-bold text-sm text-bl-ink mt-1">
                       {selecionado.data_envio}
                     </div>
                   </div>
                 </div>
 
-                {/* Endpoint e método */}
-                <div className="glass-inset rounded-2xl p-3 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded-md bg-bl-blue text-white font-mono text-[10px] font-bold">
-                      {selecionado.requisicao_simulada?.metodo ?? 'POST'}
-                    </span>
-                    <span className="font-mono text-[11px] text-bl-ink truncate">
-                      {selecionado.requisicao_simulada?.url}
-                    </span>
+                {/* Balão de Prévia da Mensagem no WhatsApp */}
+                <div className="glass-well rounded-2xl p-4 space-y-2">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-bl-blue flex items-center gap-1.5">
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    Mensagem Personalizada
                   </div>
+                  <p className="text-sm text-bl-ink leading-relaxed">
+                    “{selecionado.mensagem}”
+                  </p>
                 </div>
 
-                {/* JSON formatado */}
-                <div className="rounded-2xl bg-[#14161B] text-emerald-300 p-4 font-mono text-[11px] overflow-x-auto leading-relaxed shadow-inner border border-white/10">
-                  <pre className="m-0">
-                    {JSON.stringify(selecionado.requisicao_simulada, null, 2)}
-                  </pre>
-                </div>
-
-                <p className="text-[11px] text-bl-muted leading-relaxed">
-                  • Variável <code className="text-bl-ink font-semibold">{'{nome}'}</code> substituída pelo primeiro nome do cliente.
-                  <br />• Token obtido via <code className="text-bl-ink font-semibold">WHATSAPP_API_TOKEN</code> no backend.
-                </p>
+                {/* Gaveta recolhida opcional para os dados de integração Setabot */}
+                <details className="glass-inset rounded-2xl p-3.5 text-xs group">
+                  <summary className="font-semibold text-bl-muted hover:text-bl-ink cursor-pointer flex items-center justify-between list-none">
+                    <span>Dados de integração com a plataforma Setabot</span>
+                    <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="mt-3 rounded-xl bg-[#14161B] text-emerald-300 p-3.5 font-mono text-[11px] overflow-x-auto leading-relaxed">
+                    <pre className="m-0">
+                      {JSON.stringify(selecionado.requisicao_simulada, null, 2)}
+                    </pre>
+                  </div>
+                </details>
               </div>
             )}
           </Panel>
         </div>
       </div>
 
-      {/* Modal com Fundo Desfocado para Inspeção Completa do Payload */}
+      {/* Modal com Fundo Desfocado para Visualização Completa do Envio */}
       <Overlay aberto={!!modalAberto} onFechar={() => setModalAberto(null)} variante="modal">
         {modalAberto && (
           <>
             <div className="p-6 border-b border-white/70 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-bl-blue text-white flex items-center justify-center">
-                  <Code2 className="w-5 h-5" />
+                  <MessageCircle className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="font-display font-semibold text-sm text-bl-ink">
-                    Requisição Simulada #{modalAberto.id} · Setabot API
+                    Comprovante de Envio #{modalAberto.id} · Canal WhatsApp
                   </h3>
                   <p className="text-xs text-bl-muted">
-                    Cliente: {modalAberto.nome_cliente} ({modalAberto.telefone})
+                    Destinatário: {modalAberto.nome_cliente} ({modalAberto.telefone})
                   </p>
                 </div>
               </div>
@@ -272,27 +293,33 @@ export function SimulacaoView({
                 type="button"
                 onClick={() => setModalAberto(null)}
                 className="glass-icon"
-                aria-label="Fechar modal"
+                aria-label="Fechar janela"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="p-6 space-y-4 overflow-y-auto">
-              <div className="glass-inset rounded-2xl p-4 text-xs space-y-1">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-bl-muted">
-                  Mensagem Personalizada
+              <div className="glass-inset rounded-2xl p-4 text-xs space-y-1.5">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-bl-muted">
+                  Mensagem Enviada na Trilha {modalAberto.trilha}
                 </div>
-                <p className="text-bl-ink font-medium leading-relaxed">
+                <p className="text-sm text-bl-ink font-medium leading-relaxed">
                   “{modalAberto.mensagem}”
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-[#14161B] text-emerald-300 p-4 font-mono text-xs overflow-x-auto leading-relaxed">
-                <pre className="m-0">
-                  {JSON.stringify(modalAberto.requisicao_simulada, null, 2)}
-                </pre>
-              </div>
+              <details className="glass-inset rounded-2xl p-4 text-xs group">
+                <summary className="font-semibold text-bl-muted hover:text-bl-ink cursor-pointer flex items-center justify-between list-none">
+                  <span>Ver registro de comunicação Setabot</span>
+                  <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="mt-3 rounded-2xl bg-[#14161B] text-emerald-300 p-4 font-mono text-xs overflow-x-auto leading-relaxed">
+                  <pre className="m-0">
+                    {JSON.stringify(modalAberto.requisicao_simulada, null, 2)}
+                  </pre>
+                </div>
+              </details>
             </div>
           </>
         )}
