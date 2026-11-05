@@ -1,6 +1,5 @@
 import os
 import re
-import json
 from datetime import datetime, timedelta
 from app.services.mensagens import MENSAGENS_POR_TRILHA, ORDEM_PRIORIDADE
 
@@ -18,7 +17,7 @@ def formatar_telefone(telefone_bruto: str) -> str:
 
 def obter_proximo_dia_semana(data_base: datetime, dia_semana: int = 0) -> datetime:
     """
-    Calcula a próxima data para o dia da semana configurado (0 = Segunda, 2 = Quarta, etc).
+    Calcula a próxima data para o dia da semana configurado (0 = Segunda, 1 = Terça, etc).
     """
     dias_ate_la = (dia_semana - data_base.weekday() + 7) % 7
     if dias_ate_la == 0:
@@ -29,17 +28,31 @@ def obter_proximo_dia_semana(data_base: datetime, dia_semana: int = 0) -> dateti
 def calcular_cronograma_envios(clientes: list, data_inicial: datetime = None, dia_semana: int = 0) -> list:
     """
     Gera o calendário completo de envios para os clientes confirmados.
-    Regra: 1 mensagem por semana, 3 semanas por trilha, na ordem de prioridade.
+    Regra:
+    - 1 mensagem por semana, 3 semanas por trilha, na ordem de prioridade.
+    - Por padrão, todos usam 'dia_semana' (padrão global).
+    - Se o cliente tiver 'dia_semana_envio' preenchido, usa o dia individual dele.
     """
-    if data_inicial is None:
-        data_inicial = obter_proximo_dia_semana(datetime.now(), dia_semana)
-
+    agora = datetime.now()
     cronograma = []
 
     for cliente in clientes:
-        # Pega o primeiro nome do cliente
         primeiro_nome = cliente.nome_completo.split()[0] if cliente.nome_completo else "Cliente"
         telefone_formatado = formatar_telefone(cliente.telefone)
+
+        # Se o cliente tiver um dia da semana individual configurado, usa o dele;
+        # caso contrário (None), aplica o dia padrão de todos os clientes.
+        dia_individual = getattr(cliente, "dia_semana_envio", None)
+        if dia_individual is not None:
+            dia_do_cliente = dia_individual
+        else:
+            dia_do_cliente = dia_semana
+
+        # Define a primeira data de envio deste cliente
+        if data_inicial is not None:
+            primeira_data_cliente = data_inicial
+        else:
+            primeira_data_cliente = obter_proximo_dia_semana(agora, dia_do_cliente)
 
         # Trata as trilhas confirmadas do cliente
         trilhas_cliente = []
@@ -49,14 +62,14 @@ def calcular_cronograma_envios(clientes: list, data_inicial: datetime = None, di
         # Ordena as trilhas pela prioridade oficial do case
         trilhas_ordenadas = [t for t in ORDEM_PRIORIDADE if t in trilhas_cliente]
 
-        # Cada semana avança 7 dias
+        # Cada semana avança 7 dias (sempre no mesmo dia da semana do cliente)
         semana_acumulada = 0
 
         for trilha in trilhas_ordenadas:
             mensagens = MENSAGENS_POR_TRILHA.get(trilha, [])
 
             for indice_msg, template in enumerate(mensagens, start=1):
-                data_prevista = data_inicial + timedelta(weeks=semana_acumulada)
+                data_prevista = primeira_data_cliente + timedelta(weeks=semana_acumulada)
                 texto_formatado = template.replace("{nome}", primeiro_nome)
 
                 cronograma.append({
@@ -68,6 +81,8 @@ def calcular_cronograma_envios(clientes: list, data_inicial: datetime = None, di
                     "numero_mensagem": indice_msg,
                     "semana_relativa": semana_acumulada + 1,
                     "data_envio": data_prevista.strftime("%Y-%m-%d"),
+                    "dia_semana": dia_do_cliente,
+                    "dia_personalizado": dia_individual is not None,
                     "mensagem": texto_formatado
                 })
 
@@ -99,4 +114,3 @@ def montar_requisicao_setabot(telefone: str, mensagem: str) -> dict:
             "message": mensagem
         }
     }
-
