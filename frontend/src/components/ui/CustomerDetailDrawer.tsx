@@ -19,8 +19,21 @@ import { StatusBadge } from './Badges';
 interface CustomerDetailDrawerProps {
   cliente: Cliente | null;
   onFechar: () => void;
-  onConfirmarTrilhas: (clienteId: number, trilhas: string[]) => Promise<void>;
+  onConfirmarTrilhas: (
+    clienteId: number,
+    trilhas: string[],
+    diaSemanaEnvio?: number | null
+  ) => Promise<void>;
 }
+
+const OPCOES_DIA_DRAWER: Array<{ valor: number | null; rotulo: string }> = [
+  { valor: null, rotulo: 'Seguir padrão geral' },
+  { valor: 0, rotulo: 'Segunda-feira' },
+  { valor: 1, rotulo: 'Terça-feira' },
+  { valor: 2, rotulo: 'Quarta-feira' },
+  { valor: 3, rotulo: 'Quinta-feira' },
+  { valor: 4, rotulo: 'Sexta-feira' },
+];
 
 export function CustomerDetailDrawer({
   cliente,
@@ -28,6 +41,7 @@ export function CustomerDetailDrawer({
   onConfirmarTrilhas,
 }: CustomerDetailDrawerProps) {
   const [selecionadas, setSelecionadas] = useState<string[]>([]);
+  const [diaIndividual, setDiaIndividual] = useState<number | null>(null);
   const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
@@ -37,6 +51,9 @@ export function CustomerDetailDrawer({
     } else {
       setSelecionadas(cliente.trilhas_sugeridas.map((t) => t.nome));
     }
+    setDiaIndividual(
+      cliente.dia_semana_envio !== undefined ? cliente.dia_semana_envio : null
+    );
   }, [cliente]);
 
   if (!cliente) return null;
@@ -53,7 +70,7 @@ export function CustomerDetailDrawer({
     if (selecionadas.length === 0) return;
     setSalvando(true);
     try {
-      await onConfirmarTrilhas(cliente.id, selecionadas);
+      await onConfirmarTrilhas(cliente.id, selecionadas, diaIndividual);
       onFechar();
     } finally {
       setSalvando(false);
@@ -169,7 +186,7 @@ export function CustomerDetailDrawer({
         </div>
 
         {/* Ajuste manual e confirmação do Analista */}
-        <div className="glass-inset rounded-3xl p-5 space-y-3.5">
+        <div className="glass-inset rounded-3xl p-5 space-y-4">
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-bl-ink">
               Decisão do Analista
@@ -237,6 +254,41 @@ export function CustomerDetailDrawer({
                 </label>
               );
             })}
+          </div>
+
+          {/* Configuração de Dia da Semana Individual para este Cliente */}
+          <div className="glass-well rounded-2xl p-4 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-bold text-bl-ink flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-bl-blue" />
+                Dia da Semana de Envio (Individual)
+              </div>
+              <span className="text-[11px] text-bl-muted">
+                {diaIndividual === null ? 'Usando padrão geral' : 'Dia exclusivo deste cliente'}
+              </span>
+            </div>
+            <p className="text-[11px] text-bl-muted leading-relaxed">
+              Por padrão, este cliente segue o dia geral do cronograma. Para ações específicas (como Black Friday), escolha um dia exclusivo apenas para ele:
+            </p>
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {OPCOES_DIA_DRAWER.map((op) => {
+                const ativo = diaIndividual === op.valor;
+                return (
+                  <button
+                    key={String(op.valor)}
+                    type="button"
+                    onClick={() => setDiaIndividual(op.valor)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                      ativo
+                        ? 'bg-bl-blue text-white shadow-sm'
+                        : 'bg-white/80 text-bl-ink hover:bg-white'
+                    }`}
+                  >
+                    {op.rotulo}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Prévia da jornada em semanas */}

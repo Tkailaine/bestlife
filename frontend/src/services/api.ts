@@ -29,12 +29,20 @@ export async function fetchClienteById(id: number): Promise<Cliente> {
 
 export async function confirmarTrilhasCliente(
   id: number,
-  trilhas: string[]
-): Promise<{ mensagem: string; status_confirmacao: boolean }> {
+  trilhas: string[],
+  dia_semana_envio?: number | null
+): Promise<{
+  mensagem: string;
+  status_confirmacao: boolean;
+  dia_semana_envio?: number | null;
+}> {
   const res = await fetch(`${API_BASE_URL}/clientes/${id}/confirmar`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ trilhas }),
+    body: JSON.stringify({
+      trilhas,
+      dia_semana_envio: dia_semana_envio === undefined ? null : dia_semana_envio,
+    }),
   });
   if (!res.ok) throw new Error('Erro ao confirmar trilhas');
   return res.json();
@@ -43,10 +51,23 @@ export async function confirmarTrilhasCliente(
 export async function fetchCronograma(): Promise<{
   total_envios: number;
   total_clientes_confirmados: number;
+  dia_semana_padrao?: number;
   itens: CronogramaItem[];
 }> {
   const res = await fetch(`${API_BASE_URL}/cronograma`);
   if (!res.ok) throw new Error('Falha ao carregar cronograma');
+  return res.json();
+}
+
+export async function salvarDiaSemanaPadrao(
+  dia_semana_padrao: number
+): Promise<{ mensagem: string; dia_semana_padrao: number }> {
+  const res = await fetch(`${API_BASE_URL}/cronograma/configurar-dia`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dia_semana_padrao }),
+  });
+  if (!res.ok) throw new Error('Erro ao salvar dia da semana padrão');
   return res.json();
 }
 

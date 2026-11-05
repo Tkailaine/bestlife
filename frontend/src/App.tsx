@@ -15,6 +15,7 @@ import {
   fetchCronograma,
   fetchHistoricoEnvios,
   confirmarTrilhasCliente,
+  salvarDiaSemanaPadrao,
   simularEnviosHoje,
 } from './services/api';
 import type { Cliente, CronogramaItem, HistoricoSimulacao, TabType } from './types';
@@ -25,6 +26,7 @@ export function App() {
   const [apiOnline, setApiOnline] = useState<boolean>(false);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [cronograma, setCronograma] = useState<CronogramaItem[]>([]);
+  const [diaSemanaPadrao, setDiaSemanaPadrao] = useState<number>(0);
   const [historico, setHistorico] = useState<HistoricoSimulacao[]>([]);
   const [clienteEmFoco, setClienteEmFoco] = useState<Cliente | null>(null);
   const [clienteDrawer, setClienteDrawer] = useState<Cliente | null>(null);
@@ -54,6 +56,7 @@ export function App() {
           fetchCronograma().catch(() => ({
             total_envios: 0,
             total_clientes_confirmados: 0,
+            dia_semana_padrao: 0,
             itens: [],
           })),
           fetchHistoricoEnvios().catch(() => []),
@@ -61,6 +64,9 @@ export function App() {
 
         setClientes(listaClientes);
         setCronograma(dadosCronograma.itens || []);
+        if (typeof dadosCronograma.dia_semana_padrao === 'number') {
+          setDiaSemanaPadrao(dadosCronograma.dia_semana_padrao);
+        }
         setHistorico(dadosHistorico);
 
         setClienteEmFoco((atual) => {
@@ -68,7 +74,6 @@ export function App() {
           if (atual) {
             return listaClientes.find((c) => c.id === atual.id) ?? listaClientes[0];
           }
-          // Prioriza automaticamente o cliente pendente de maior valor para apoiar a decisão do analista
           const maisRelevante = [...listaClientes].sort((a, b) => {
             if (a.status_confirmacao !== b.status_confirmacao) {
               return a.status_confirmacao ? 1 : -1;
@@ -103,14 +108,32 @@ export function App() {
     setAbaAtiva(aba);
   };
 
-  const handleConfirmarTrilhas = async (clienteId: number, trilhas: string[]) => {
+  const handleConfirmarTrilhas = async (
+    clienteId: number,
+    trilhas: string[],
+    diaSemanaEnvio?: number | null
+  ) => {
     try {
-      await confirmarTrilhasCliente(clienteId, trilhas);
+      await confirmarTrilhasCliente(clienteId, trilhas, diaSemanaEnvio);
       await carregarDados();
-      notificar('sucesso', 'Trilhas confirmadas com sucesso e incluídas no cronograma semanal.');
+      notificar(
+        'sucesso',
+        'Trilhas e preferência de envio salvas com sucesso no cronograma.'
+      );
     } catch (err: any) {
       notificar('erro', err?.message || 'Não foi possível salvar a confirmação.');
       throw err;
+    }
+  };
+
+  const handleAlterarDiaPadrao = async (novoDia: number) => {
+    try {
+      await salvarDiaSemanaPadrao(novoDia);
+      setDiaSemanaPadrao(novoDia);
+      await carregarDados();
+      notificar('sucesso', 'Dia da semana padrão atualizado e salvo.');
+    } catch (err: any) {
+      notificar('erro', err?.message || 'Não foi possível atualizar o dia padrão.');
     }
   };
 
@@ -225,6 +248,8 @@ export function App() {
             {abaAtiva === 'cronograma' && (
               <CronogramaView
                 cronograma={cronograma}
+                diaSemanaPadrao={diaSemanaPadrao}
+                onAlterarDiaPadrao={handleAlterarDiaPadrao}
                 isLoading={isLoading}
                 onNavigate={navegarPara}
               />

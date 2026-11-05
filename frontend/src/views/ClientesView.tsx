@@ -30,7 +30,11 @@ interface ClientesViewProps {
   clienteEmFoco: Cliente | null;
   onSelecionarClienteFoco: (cliente: Cliente) => void;
   onExpandirCliente: (cliente: Cliente) => void;
-  onConfirmarTrilhas: (clienteId: number, trilhas: string[]) => Promise<void>;
+  onConfirmarTrilhas: (
+    clienteId: number,
+    trilhas: string[],
+    diaSemanaEnvio?: number | null
+  ) => Promise<void>;
   onVoltarDashboard: () => void;
   buscaInputRef?: RefObject<HTMLInputElement | null>;
 }
@@ -388,7 +392,7 @@ export function ClientesView({
         </div>
 
         {/* COLUNA DIREITA (4 colunas): Painel Lateral de Inspeção & Diagnóstico */}
-        <div className="xl:col-span-4 xl:sticky xl:top-6">
+        <div className="xl:col-span-4 xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto xl:pr-1 pb-4">
           <CustomerInspectorPanel
             cliente={clienteEmFoco}
             onExpandirDetalhes={onExpandirCliente}

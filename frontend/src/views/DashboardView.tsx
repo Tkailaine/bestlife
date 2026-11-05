@@ -27,7 +27,11 @@ interface DashboardViewProps {
   clienteEmFoco: Cliente | null;
   onSelecionarClienteFoco: (cliente: Cliente) => void;
   onExpandirCliente: (cliente: Cliente) => void;
-  onConfirmarTrilhas: (clienteId: number, trilhas: string[]) => Promise<void>;
+  onConfirmarTrilhas: (
+    clienteId: number,
+    trilhas: string[],
+    diaSemanaEnvio?: number | null
+  ) => Promise<void>;
   onNavigate: (tab: TabType, filtroTrilha?: string) => void;
   onQuickSimulate: () => void;
   isSimulating: boolean;

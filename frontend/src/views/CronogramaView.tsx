@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import type { CronogramaItem, TabType } from '../types';
 import { ORDEM_TRILHAS, visualDaTrilha } from '../constants/trilhas';
-import { formatarDataLonga, paraData } from '../utils/format';
+import { formatarDataLonga } from '../utils/format';
 import { PageHeader, type Indicador } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';
 import { SendCalendar } from '../components/ui/SendCalendar';
@@ -20,6 +20,8 @@ import { EmptyState } from '../components/ui/EmptyState';
 
 interface CronogramaViewProps {
   cronograma: CronogramaItem[];
+  diaSemanaPadrao: number;
+  onAlterarDiaPadrao: (dia: number) => Promise<void>;
   isLoading: boolean;
   onNavigate: (tab: TabType) => void;
 }
@@ -32,34 +34,21 @@ const DIAS_SEMANA_CONFIG = [
   { offset: 4, rotulo: 'Sexta-feira' },
 ];
 
-function deslocarDataIso(dataIso: string, diasExtras: number): string {
-  if (diasExtras === 0) return dataIso;
-  const d = paraData(dataIso);
-  d.setDate(d.getDate() + diasExtras);
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dia = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${m}-${dia}`;
-}
-
 export function CronogramaView({
   cronograma,
+  diaSemanaPadrao,
+  onAlterarDiaPadrao,
   isLoading,
   onNavigate,
 }: CronogramaViewProps) {
   const [filtroTrilha, setFiltroTrilha] = useState('Todas');
   const [dataSelecionada, setDataSelecionada] = useState<string | null>(null);
-  const [diaSemanaOffset, setDiaSemanaOffset] = useState(0);
+  const [salvandoDia, setSalvandoDia] = useState(false);
 
-  // Aplica o dia da semana configurável (preservando a cadência de 1 msg/semana do backend)
-  const cronogramaAjustado = cronograma.map((item) => ({
-    ...item,
-    data_envio: deslocarDataIso(item.data_envio, diaSemanaOffset),
-  }));
+  const clientesUnicos = new Set(cronograma.map((i) => i.cliente_id)).size;
+  const semanasUnicas = new Set(cronograma.map((i) => i.data_envio)).size;
 
-  const clientesUnicos = new Set(cronogramaAjustado.map((i) => i.cliente_id)).size;
-  const semanasUnicas = new Set(cronogramaAjustado.map((i) => i.data_envio)).size;
-
-  const itensFiltrados = cronogramaAjustado.filter((item) => {
+  const itensFiltrados = cronograma.filter((item) => {
     const okTrilha = filtroTrilha === 'Todas' || item.trilha === filtroTrilha;
     const okData = !dataSelecionada || item.data_envio === dataSelecionada;
     return okTrilha && okData;
@@ -72,11 +61,22 @@ export function CronogramaView({
     gruposPorData[item.data_envio].push(item);
   }
 
+  const handleTrocarDiaPadrao = async (novoDia: number) => {
+    if (novoDia === diaSemanaPadrao || salvandoDia) return;
+    setSalvandoDia(true);
+    try {
+      setDataSelecionada(null);
+      await onAlterarDiaPadrao(novoDia);
+    } finally {
+      setSalvandoDia(false);
+    }
+  };
+
   const indicadores: Indicador[] = [
     {
       icon: CalendarDays,
-      valor: cronogramaAjustado.length,
-      chip: { texto: `${semanasUnicas} semanas`, tom: 'amarelo' },
+      valor: cronograma.length,
+      chip: { texto: `${semanasUnicas} datas`, tom: 'amarelo' },
       legenda: 'Total de disparos semanais programados',
     },
     {
@@ -125,29 +125,27 @@ export function CronogramaView({
             }
           >
             <SendCalendar
-              itens={cronogramaAjustado}
+              itens={cronograma}
               dataSelecionada={dataSelecionada}
               onSelecionarData={setDataSelecionada}
             />
           </Panel>
 
           <Panel
-            title="Cadência & Dia da Semana Configurável"
-            subtitle="Todas as mensagens saem sempre no mesmo dia da semana"
+            title="Dia da Semana Padrão (Geral)"
+            subtitle="Salvo automaticamente para toda a operação. Clientes com dia individual mantêm seu próprio dia."
             delay={140}
           >
             <div className="flex flex-wrap gap-1.5 mb-4">
               {DIAS_SEMANA_CONFIG.map((d) => {
-                const ativo = diaSemanaOffset === d.offset;
+                const ativo = diaSemanaPadrao === d.offset;
                 return (
                   <button
                     key={d.rotulo}
                     type="button"
-                    onClick={() => {
-                      setDiaSemanaOffset(d.offset);
-                      setDataSelecionada(null);
-                    }}
-                    className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all cursor-pointer ${
+                    disabled={salvandoDia}
+                    onClick={() => handleTrocarDiaPadrao(d.offset)}
+                    className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all cursor-pointer disabled:opacity-60 ${
                       ativo
                         ? 'bg-bl-blue text-white shadow-sm'
                         : 'glass-inset text-bl-ink hover:bg-white/80'
@@ -163,13 +161,13 @@ export function CronogramaView({
               <div className="flex items-start gap-2">
                 <Sparkles className="w-4 h-4 text-bl-blue shrink-0 mt-0.5" />
                 <span>
-                  <strong className="text-bl-ink">Uma trilha por vez:</strong> o cliente conclui as 3 semanas da trilha de maior prioridade antes de iniciar a seguinte.
+                  <strong className="text-bl-ink">Personalização individual:</strong> na ficha de cada cliente, você pode definir um dia exclusivo (ex.: Sexta-feira para campanha de Black Friday) sem afetar os demais.
                 </span>
               </div>
               <div className="flex items-start gap-2">
                 <Clock className="w-4 h-4 text-bl-blue shrink-0 mt-0.5" />
                 <span>
-                  <strong className="text-bl-ink">Apenas confirmados:</strong> somente clientes aprovados pelo analista entram nesta fila.
+                  <strong className="text-bl-ink">Uma trilha por vez:</strong> o cliente conclui as 3 semanas da trilha prioritária antes de iniciar a próxima.
                 </span>
               </div>
             </div>
@@ -243,7 +241,7 @@ export function CronogramaView({
               <Panel
                 key={dataEnvio}
                 title={`Semana ${envios[0].semana_relativa} · ${formatarDataLonga(dataEnvio)}`}
-                subtitle={`Data prevista: ${dataEnvio} • ${envios.length} disparo(s) programado(s)`}
+                subtitle={`Data programada: ${dataEnvio} • ${envios.length} disparo(s) agendado(s)`}
                 delay={120 + idx * 50}
                 actions={
                   <span className="glass-inset rounded-full px-3 py-1 text-[11px] font-bold text-bl-blue">
@@ -261,8 +259,13 @@ export function CronogramaView({
                         <div className="flex items-center gap-2.5">
                           <Avatar nome={item.nome_cliente} size="md" />
                           <div>
-                            <div className="font-bold text-xs text-bl-ink">
-                              {item.nome_cliente}
+                            <div className="font-bold text-xs text-bl-ink flex items-center gap-2">
+                              <span>{item.nome_cliente}</span>
+                              {item.dia_personalizado && (
+                                <span className="rounded-full bg-bl-blue/12 text-bl-blue px-2 py-0.5 text-[10px] font-bold">
+                                  Dia Individual
+                                </span>
+                              )}
                             </div>
                             <div className="text-[10px] text-bl-muted font-mono">
                               {item.telefone}

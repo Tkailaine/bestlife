@@ -18,6 +18,7 @@ export interface Cliente {
   trilhas_sugeridas: TrilhaSugerida[];
   trilhas_confirmadas: string[];
   status_confirmacao: boolean;
+  dia_semana_envio?: number | null;
 }
 
 export interface CronogramaItem {
@@ -29,6 +30,8 @@ export interface CronogramaItem {
   numero_mensagem: number;
   semana_relativa: number;
   data_envio: string;
+  dia_semana?: number;
+  dia_personalizado?: boolean;
   mensagem: string;
 }
 
@@ -54,4 +57,3 @@ export interface HistoricoSimulacao {
   criado_em: string;
   requisicao_simulada: RequisicaoSetabot;
 }
-
