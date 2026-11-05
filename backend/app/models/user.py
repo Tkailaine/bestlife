@@ -19,3 +19,6 @@ class User(Base):
     # Trilhas e controle do analista
     trilhas_confirmadas = Column(String, nullable=True)
     status_confirmacao = Column(Boolean, default=False)
+
+    # Dia da semana individual (0=Segunda ... 4=Sexta, ou None para seguir o padrão geral)
+    dia_semana_envio = Column(Integer, nullable=True, default=None)

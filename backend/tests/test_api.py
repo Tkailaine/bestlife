@@ -39,12 +39,43 @@ def test_obter_cliente_detalhes():
 
 def test_confirmar_trilhas():
     """Testa a confirmação de trilhas pelo analista"""
-    payload = {"trilhas": ["Alto valor", "Público jovem"]}
+    payload = {"trilhas": ["Alto valor", "Público jovem"], "dia_semana_envio": None}
     response = client.post("/clientes/1/confirmar", json=payload)
     assert response.status_code == 200
     resultado = response.json()
     assert resultado["status_confirmacao"] is True
     assert resultado["trilhas_confirmadas"] == ["Alto valor", "Público jovem"]
+
+
+def test_configurar_dia_semana_padrao_e_individual():
+    """Testa a persistência do dia da semana padrão e do dia individual por cliente"""
+    # 1. Configura Terça-feira (1) como padrão global e verifica se persiste
+    res_padrao = client.post("/cronograma/configurar-dia", json={"dia_semana_padrao": 1})
+    assert res_padrao.status_code == 200
+    assert res_padrao.json()["dia_semana_padrao"] == 1
+
+    cronograma = client.get("/cronograma").json()
+    assert cronograma["dia_semana_padrao"] == 1
+
+    # 2. Configura Sexta-feira (4) exclusivamente para o cliente #1 (ex: Black Friday)
+    res_ind = client.post(
+        "/clientes/1/confirmar",
+        json={"trilhas": ["Alto valor", "Público jovem"], "dia_semana_envio": 4}
+    )
+    assert res_ind.status_code == 200
+    assert res_ind.json()["dia_semana_envio"] == 4
+
+    cronograma_ind = client.get("/cronograma").json()
+    item_c1 = [i for i in cronograma_ind["itens"] if i["cliente_id"] == 1][0]
+    assert item_c1["dia_semana"] == 4
+    assert item_c1["dia_personalizado"] is True
+
+    # Restaura o cliente #1 para seguir o padrão geral (None) e o padrão para Segunda (0)
+    client.post(
+        "/clientes/1/confirmar",
+        json={"trilhas": ["Alto valor", "Público jovem"], "dia_semana_envio": None}
+    )
+    client.post("/cronograma/configurar-dia", json={"dia_semana_padrao": 0})
 
 
 def test_cronograma_envios():
@@ -71,4 +102,3 @@ def test_simulacao_envio_whatsapp():
     assert response_2.status_code == 200
     historico_depois = client.get("/simulacao/historico").json()
     assert len(historico_depois) == len(historico_antes)
-
