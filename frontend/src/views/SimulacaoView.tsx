@@ -59,7 +59,7 @@ export function SimulacaoView({
     {
       icon: Send,
       valor: clientesUnicos,
-      formato: (n) => `+${n}`,
+      formato: (n) => `${n}`,
       chip: { texto: 'WhatsApp', tom: 'azul' },
       legenda: 'Clientes atendidos nos lotes disparados',
     },

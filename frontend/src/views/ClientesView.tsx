@@ -129,7 +129,7 @@ export function ClientesView({
     {
       icon: CheckCircle2,
       valor: confirmados,
-      formato: (n) => `+${n}`,
+      formato: (n) => `${n}`,
       chip: {
         texto: `${total > 0 ? Math.round((confirmados / total) * 100) : 0}% da carteira`,
         tom: 'azul',

@@ -94,14 +94,14 @@ export function DashboardView({
     {
       icon: Users,
       valor: confirmados.length,
-      formato: (n) => `+${n}`,
+      formato: (n) => `${n}`,
       chip: { texto: `${pendentes} pendentes`, tom: 'azul' },
       legenda: 'Clientes aprovados pelo analista de CRM',
     },
     {
       icon: CalendarCheck2,
       valor: cronograma.length,
-      formato: (n) => `+${n}`,
+      formato: (n) => `${n}`,
       chip: { texto: `${historico.length} simulados`, tom: 'vidro' },
       legenda: 'Mensagens previstas nas próximas semanas',
     },

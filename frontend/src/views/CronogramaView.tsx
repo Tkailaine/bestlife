@@ -82,7 +82,7 @@ export function CronogramaView({
     {
       icon: Users,
       valor: clientesUnicos,
-      formato: (n) => `+${n}`,
+      formato: (n) => `${n}`,
       chip: { texto: 'Confirmados', tom: 'azul' },
       legenda: 'Clientes aprovados pelo analista no fluxo',
     },
