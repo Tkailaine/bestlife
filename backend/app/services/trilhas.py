@@ -1,11 +1,19 @@
+def formatar_reais(valor: float) -> str:
+    # Formata o número no padrão brasileiro (Ex: 186110.85 -> "186.110,85")
+    valor_formatado = f"{valor:,.2f}"
+    valor_formatado = valor_formatado.replace(",", "X").replace(".", ",").replace("X", ".")
+    return valor_formatado
+
+
 def classificar_cliente(valor_total: float, quantidade_itens: int, idade: int) -> list:
     trilhas = []
+    valor_br = formatar_reais(valor_total)
 
     # Prioridade 1: Alto valor
     if valor_total >= 10000.0:
         trilhas.append({
             "nome": "Alto valor",
-            "motivo": f"valor total R$ {valor_total:.2f} ≥ R$ 10.000"
+            "motivo": f"valor total R$ {valor_br} ≥ R$ 10.000"
         })
 
     # Prioridade 2: Compra em quantidade
@@ -19,7 +27,7 @@ def classificar_cliente(valor_total: float, quantidade_itens: int, idade: int) -
     if valor_total < 1000.0:
         trilhas.append({
             "nome": "Incentivo",
-            "motivo": f"valor total R$ {valor_total:.2f} < R$ 1.000"
+            "motivo": f"valor total R$ {valor_br} < R$ 1.000"
         })
 
     # Prioridade 4: Público jovem
