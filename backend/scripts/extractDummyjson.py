@@ -11,8 +11,20 @@ def buscar_todos_registros(url: str, chave_recurso: str, limite: int = 50) -> li
 
     while True:
         parametros = {"limit": limite, "skip": skip}
-        res = requests.get(url, params=parametros, timeout=10)
-        res.raise_for_status()
+
+        # Tratamento de erro caso a API da DummyJSON não responda ou caia
+        try:
+            res = requests.get(url, params=parametros, timeout=10)
+            res.raise_for_status()
+        except requests.exceptions.Timeout:
+            print(f"[ERRO] Tempo limite esgotado (timeout) ao tentar acessar: {url}")
+            break
+        except requests.exceptions.ConnectionError:
+            print(f"[ERRO] Falha de conexão. A API não está respondendo: {url}")
+            break
+        except requests.exceptions.RequestException as erro:
+            print(f"[ERRO] Erro inesperado na requisição para {url}: {erro}")
+            break
 
         data = res.json()
         itens = data.get(chave_recurso, [])
@@ -58,13 +70,21 @@ def main():
     print("Iniciando busca de dados na DummyJSON...")
     print("=" * 40)
 
-    #Busca e salva usuários
+    # Busca e salva usuários
     usuarios = buscar_todos_registros("https://dummyjson.com/users", chave_recurso="users")
+    if not usuarios:
+        print("[ERRO] Não foi possível buscar os usuários. Extração cancelada.")
+        return
+
     caminho_usuarios = salvar_json_bruto(usuarios, "users", pasta_raw)
     print(f"Salvos {len(usuarios)} usuários em: {caminho_usuarios}")
 
-    #Busca e salva carrinhos
+    # Busca e salva carrinhos
     carrinhos = buscar_todos_registros("https://dummyjson.com/carts", chave_recurso="carts")
+    if not carrinhos:
+        print("[ERRO] Não foi possível buscar os carrinhos. Extração cancelada.")
+        return
+
     caminho_carrinhos = salvar_json_bruto(carrinhos, "carts", pasta_raw)
     print(f"Salvos {len(carrinhos)} carrinhos em: {caminho_carrinhos}")
 
