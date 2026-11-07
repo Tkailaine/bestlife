@@ -19,10 +19,22 @@ O sistema entrega:
 ## 🖥️ Dashboard & Interface
 
 A aplicação web permite visualizar rapidamente os indicadores da carteira e partir da visão geral para a decisão individual de cada cliente:
-- **Visão Executiva**: total de clientes, pendentes de revisão, confirmados no cronograma e clientes de maior impacto financeiro;
-- **Carteira de Clientes**: busca por nome, UF ou telefone, filtros por trilha e por status (`Todos`, `Pendentes`, `Confirmados`);
-- **Inspeção do Cliente**: detalhamento do perfil, critérios que motivaram cada trilha e confirmação pelo analista;
-- **Cronograma & Simulação**: calendário de envios semanais e disparo simulado com visualização do JSON da requisição.
+
+### 1. Visão Executiva (Painel Geral)
+Total de clientes, pendentes de revisão, confirmados no cronograma e fila de clientes de maior impacto financeiro:
+![Painel Geral](doc/painelGeral.JPG)
+
+### 2. Carteira de Clientes & Decisão do Analista
+Busca por nome, UF ou telefone, filtros por trilha e status (`Todos`, `Pendentes`, `Confirmados`), inspeção dos motivos de classificação e aprovação pelo analista:
+![Painel de Clientes](doc/painelClientes.JPG)
+
+### 3. Cronograma Semanal de Envios
+Calendário de envios previstos para as próximas semanas (3 semanas por trilha, respeitando a ordem de prioridade e o dia configurado):
+![Painel de Cronograma](doc/painelCronograma.JPG)
+
+### 4. Simulação WhatsApp (Setabot) & Histórico
+Disparo simulado das mensagens do dia com visualização do JSON da requisição e histórico salvo no banco:
+![Painel de Histórico e Simulação](doc/painelHistorico.JPG)
 
 ## 🎯 Classificação em trilhas
 
@@ -146,6 +158,7 @@ bestlife/
 │   ├── tests/test_api.py            # Testes da API com Pytest
 │   └── requirements.txt
 ├── data/raw/                        # Arquivos JSON brutos por data e hora
+├── doc/                             # Capturas de tela da interface
 ├── frontend/src/                    # Aplicação React (views, components, services)
 └── .env.example
 ```
